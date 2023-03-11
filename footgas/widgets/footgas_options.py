@@ -14,7 +14,7 @@ class FootgasOptionsWidget(QWidget):
     def __init__(self) -> None:
         super().__init__()
 
-        self.last_safe_max_size = '8'
+        self.max_size = 8
         self.manual_set = False
 
         self.populate()
@@ -46,7 +46,7 @@ class FootgasOptionsWidget(QWidget):
         max_size_label.setText('Max filesize (MB):')
         self.w_max_size = QLineEdit()
         self.w_max_size.setToolTip('Max filesize (MB)')
-        self.w_max_size.setText(self.last_safe_max_size)
+        self.w_max_size.setText(str(self.max_size))
         self.w_max_size.textChanged.connect(self._validate_max_file_size)
 
         self.w_resolution = QComboBox()
@@ -156,6 +156,6 @@ class FootgasOptionsWidget(QWidget):
     def _validate_max_file_size(self):
         # only allow integers
         try:
-            self.last_safe_max_size = int(self.w_max_size.text())
+            self.max_size = int(self.w_max_size.text())
         except ValueError:
-            self.w_max_size.setText(self.last_safe_max_size[:-1])
+            self.w_max_size.setText(str(self.max_size))
