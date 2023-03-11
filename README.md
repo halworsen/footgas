@@ -1,5 +1,8 @@
 # footgas
 
-horribly coded GUI to create video clips under discord's 8MB limit
+![Footgas](./image.png)
 
-requires ffmpeg/ffprobe to be on the path
+Twitch/YouTube clips-like GUI to create video clips under a specified max filesize,
+such as Discord's 8MB size limit ;)
+
+Requires ffmpeg/ffprobe.
