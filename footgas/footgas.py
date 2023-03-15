@@ -33,6 +33,7 @@ class Footgas(QWidget):
         self.w_video_player.durationChanged.connect(
             self._video_duration_changed
         )
+        self.w_video_player.videoDropped.connect(self._set_source)
         self.w_video_player.setEnabled(False)
 
         # Options

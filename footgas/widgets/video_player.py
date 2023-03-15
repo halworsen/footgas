@@ -1,4 +1,4 @@
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal
+from PyQt6.QtCore import Qt, QUrl, pyqtSignal, QEvent
 from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 from PyQt6.QtWidgets import (QHBoxLayout, QLabel, QPushButton, QSlider, QStyle,
@@ -134,6 +134,7 @@ class VideoPlayerWidget(QWidget):
     '''
     durationChanged = pyqtSignal(int)
     positionChanged = pyqtSignal(int)
+    videoDropped = pyqtSignal(str)
 
     def __init__(self, initial_volume: float = 0.1) -> None:
         super().__init__()
@@ -155,6 +156,10 @@ class VideoPlayerWidget(QWidget):
         self.video_player.setAudioOutput(self.audio_player)
         self.video_player.setVideoOutput(self.w_player)
 
+        # Drop events are bugged with videowidgets. This is a workaround
+        w_player_window = self.w_player.findChild(QWidget)
+        w_player_window.installEventFilter(self)
+
         self.media_control = MediaControlWidget()
         self.media_control.setVolume(initial_volume)
         self.media_control.togglePlay.connect(self._toggle_play)
@@ -169,6 +174,21 @@ class VideoPlayerWidget(QWidget):
 
         self.setLayout(layout)
 
+    def eventFilter(self, obj, event):
+        if obj is self.w_player.findChild(QWidget):
+            if event.type() == QEvent.Type.Drop:
+                self.dropEvent(event)
+        return super().eventFilter(obj, event)
+
+    def dropEvent(self, event) -> None:
+        if not event.mimeData().hasFormat("text/uri-list"):
+            return
+        if len(event.mimeData().urls()) > 1:
+            return
+
+        url = event.mimeData().urls()[0]
+        self.videoDropped.emit(url.toLocalFile())
+
     def setEnabled(self, enabled: bool) -> None:
         self.media_control.setEnabled(enabled)
 
@@ -178,6 +198,12 @@ class VideoPlayerWidget(QWidget):
         self.media_control.setPlaying(False)
         self.video_player.pause()
         self.setPosition(0)
+
+        self.start_time = 0
+        self.end_time = self.video_player.duration()
+
+    def position(self) -> int:
+        return self.video_player.position()
 
     def setPosition(self, position: int):
         self.video_player.setPosition(position)
