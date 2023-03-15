@@ -10,7 +10,6 @@ from .worker import SaveWorker
 
 class Footgas(QWidget):
     APP_TITLE = 'footgas{ext}'
-    DEFAULT_SIZE = (1280, 720)
 
     def __init__(self):
         super().__init__()
@@ -24,7 +23,7 @@ class Footgas(QWidget):
 
         size = self.screen().size()
         # on my system at least. ymmv /shrug
-        controls_height = 183
+        controls_height = 213
         self.resize(size.width() // 2, size.height() // 2 + controls_height)
 
     def populate(self):
