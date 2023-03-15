@@ -42,6 +42,8 @@ class Footgas(QWidget):
         self.w_options.save.connect(self._save)
         self.w_options.overrideStartChanged.connect(self._set_clip_start)
         self.w_options.overrideEndChanged.connect(self._set_clip_end)
+        self.w_options.startNowClicked.connect(self._set_clip_start)
+        self.w_options.endNowClicked.connect(self._set_clip_end)
         self.w_options.setEnabled(False)
 
         # Clip range control
@@ -75,19 +77,26 @@ class Footgas(QWidget):
 
         self.setLayout(vbox)
 
-    def _set_clip_start(self, start: int):
+    def _set_clip_start(self, start: int = -1):
         '''
         Set the start time of the clip
         '''
+        if start == -1:
+            start = self.w_video_player.position()
         self.clip_start = start
         self.w_video_player.setRange(self.clip_start, self.clip_end)
         self.w_options.setStart(start)
         self.w_clip_range.setValue((start, self.clip_end))
 
-    def _set_clip_end(self, end: int):
+        # When changing the clip start position, always restart the clip
+        self.w_video_player.setPosition(self.clip_start)
+
+    def _set_clip_end(self, end: int = -1):
         '''
         Set the end time of the clip
         '''
+        if end == -1:
+            end = self.w_video_player.position()
         self.clip_end = end
         self.w_video_player.setRange(self.clip_start, self.clip_end)
         self.w_options.setEnd(end)

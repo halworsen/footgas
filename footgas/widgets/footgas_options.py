@@ -1,5 +1,5 @@
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QLabel,
+from PyQt6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
                              QLineEdit, QPushButton, QWidget)
 
 from ..util import ftime, strtoms
@@ -10,12 +10,15 @@ class FootgasOptionsWidget(QWidget):
     save = pyqtSignal(str)
     overrideStartChanged = pyqtSignal(int)
     overrideEndChanged = pyqtSignal(int)
+    startNowClicked = pyqtSignal()
+    endNowClicked = pyqtSignal()
 
     def __init__(self) -> None:
         super().__init__()
 
         self.max_size = 8
-        self.manual_set = False
+        self.external_set = False
+        self.manually_entered_time = False
 
         self.populate()
 
@@ -35,12 +38,30 @@ class FootgasOptionsWidget(QWidget):
         self.w_override_start.setEnabled(False)
         self.w_override_start.textChanged.connect(self._update_override_start)
 
+        self.w_start_now = QPushButton()
+        self.w_start_now.setText('Start now')
+        self.w_start_now.setEnabled(False)
+        self.w_start_now.clicked.connect(lambda: self.startNowClicked.emit())
+
+        time_start_box = QVBoxLayout()
+        time_start_box.addWidget(self.w_override_start)
+        time_start_box.addWidget(self.w_start_now)
+
         end_label = QLabel()
         end_label.setText('End:')
         self.w_override_end = QLineEdit()
         self.w_override_end.setToolTip('End time')
         self.w_override_end.setEnabled(False)
         self.w_override_end.textChanged.connect(self._update_override_end)
+
+        self.w_end_now = QPushButton()
+        self.w_end_now.setText('End now')
+        self.w_end_now.setEnabled(False)
+        self.w_end_now.clicked.connect(lambda: self.endNowClicked.emit())
+
+        time_end_box = QVBoxLayout()
+        time_end_box.addWidget(self.w_override_end)
+        time_end_box.addWidget(self.w_end_now)
 
         max_size_label = QLabel()
         max_size_label.setText('Max filesize (MB):')
@@ -74,9 +95,9 @@ class FootgasOptionsWidget(QWidget):
         options_box.addWidget(self.w_video_select)
         options_box.addWidget(self.w_save)
         options_box.addWidget(start_label)
-        options_box.addWidget(self.w_override_start)
+        options_box.addLayout(time_start_box)
         options_box.addWidget(end_label)
-        options_box.addWidget(self.w_override_end)
+        options_box.addLayout(time_end_box)
         options_box.addWidget(self.w_resolution)
         options_box.addWidget(self.w_fps)
         options_box.addWidget(audio_bitrate_label)
@@ -90,15 +111,27 @@ class FootgasOptionsWidget(QWidget):
         self.w_save.setEnabled(enabled)
         self.w_override_start.setEnabled(enabled)
         self.w_override_end.setEnabled(enabled)
+        self.w_start_now.setEnabled(enabled)
+        self.w_end_now.setEnabled(enabled)
 
     def setStart(self, start: int) -> None:
         time = ftime(start)
-        self.manual_set = True
+
+        if self.manually_entered_time:
+            self.manually_entered_time = False
+            return
+        else:
+            self.external_set = True
+
         self.w_override_start.setText(time)
 
     def setEnd(self, end: int) -> None:
         time = ftime(end)
-        self.manual_set = True
+        if self.manually_entered_time:
+            self.manually_entered_time = False
+            return
+        else:
+            self.external_set = True
         self.w_override_end.setText(time)
 
     def maxFileSize(self) -> int:
@@ -131,25 +164,40 @@ class FootgasOptionsWidget(QWidget):
 
         self.save.emit(out_fn)
 
-    def _update_override_start(self):
-        if self.manual_set:
-            self.manual_set = False
+    def _update_override_start(self, start):
+        # don't do anything if something external set the override time
+        if self.external_set:
+            self.external_set = False
             return
 
-        start_ms = strtoms(self.w_override_start.text())
+        self.manually_entered_time = True
+        start_ms = strtoms(start)
         if start_ms is None:
             return
 
+        # don't allow the clip to start after it has ended
+        end_ms = strtoms(self.w_override_end.text())
+        if start_ms > end_ms:
+            start_ms = end_ms
+            self.w_override_start.setText(ftime(start_ms))
+
         self.overrideStartChanged.emit(start_ms)
 
-    def _update_override_end(self):
-        if self.manual_set:
-            self.manual_set = False
+    def _update_override_end(self, end):
+        if self.external_set:
+            self.external_set = False
             return
 
-        end_ms = strtoms(self.w_override_end.text())
+        self.manually_entered_time = True
+        end_ms = strtoms(end)
         if end_ms is None:
             return
+
+        # don't allow the clip to end before it has begun
+        start_ms = strtoms(self.w_override_start.text())
+        if end_ms < start_ms:
+            end_ms = start_ms
+            self.w_override_end.setText(ftime(end_ms))
 
         self.overrideEndChanged.emit(end_ms)
 
