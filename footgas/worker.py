@@ -41,8 +41,9 @@ class SaveWorker(QObject):
         trimmed_file = f'{self.file}-TRIMMED.tmp'
         subprocess.run([
             'ffmpeg', '-y', '-hide_banner', '-loglevel', 'error',
+            '-ss', f'{self.start}',  # order matters. must be before -i
+            '-to', f'{self.end}',
             '-i', f'{self.file}',
-            '-c', 'copy', '-ss', f'{self.start}', '-to', f'{self.end}',
             '-f', 'mp4',
             f'{trimmed_file}',
         ], creationflags=self.NO_WINDOW_FLAG)
