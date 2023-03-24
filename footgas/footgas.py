@@ -132,6 +132,7 @@ class Footgas(QWidget):
 
     def _save(self, filename: str):
         start, end = map(ftime, self.w_clip_range.value())
+
         self.w_clip_range.setEnabled(False)
         self.w_options.setEnabled(False)
 

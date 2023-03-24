@@ -1,6 +1,6 @@
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel,
-                             QLineEdit, QPushButton, QWidget)
+                             QLineEdit, QPushButton, QWidget, QMessageBox)
 
 from ..util import ftime, strtoms
 
@@ -154,6 +154,15 @@ class FootgasOptionsWidget(QWidget):
         self.sourceSelected.emit(fn)
 
     def _save(self):
+        start, end = map(strtoms, (self.w_override_start.text(), self.w_override_end.text()))
+        if start >= end:
+            error_popup = QMessageBox()
+            error_popup.setWindowTitle('Error')
+            error_popup.setIcon(QMessageBox.Icon.Warning)
+            error_popup.setText('Clip cannot start before it ends!')
+            error_popup.exec()
+            return
+
         out_fn, _ = QFileDialog.getSaveFileName(
             self,
             'Select save destination',
@@ -175,12 +184,6 @@ class FootgasOptionsWidget(QWidget):
         if start_ms is None:
             return
 
-        # don't allow the clip to start after it has ended
-        end_ms = strtoms(self.w_override_end.text())
-        if start_ms > end_ms:
-            start_ms = end_ms
-            self.w_override_start.setText(ftime(start_ms))
-
         self.overrideStartChanged.emit(start_ms)
 
     def _update_override_end(self, end):
@@ -192,12 +195,6 @@ class FootgasOptionsWidget(QWidget):
         end_ms = strtoms(end)
         if end_ms is None:
             return
-
-        # don't allow the clip to end before it has begun
-        start_ms = strtoms(self.w_override_start.text())
-        if end_ms < start_ms:
-            end_ms = start_ms
-            self.w_override_end.setText(ftime(end_ms))
 
         self.overrideEndChanged.emit(end_ms)
 
