@@ -3,6 +3,8 @@ import subprocess
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
+from .util import strtoms
+
 
 class SaveWorker(QObject):
     progress = pyqtSignal(int)
@@ -48,14 +50,7 @@ class SaveWorker(QObject):
         self.progress.emit(40)
 
         # get the max bitrate we can encode at
-        pout = subprocess.run([
-            'ffprobe', '-i', f'{trimmed_file}',
-            '-show_entries', 'format=duration',
-            '-of', 'default=noprint_wrappers=1:nokey=1',
-        ], capture_output=True, creationflags=self.NO_WINDOW_FLAG)
-        pout = pout.stdout.decode('utf8')
-        duration = float(pout)
-
+        duration = (strtoms(self.end) - strtoms(self.start)) / 1e3
         max_encode_rate = ((self.max_size_mb * 8192) / duration)
         max_encode_rate -= self.audio_bitrate_kb
         max_encode_rate = int(max_encode_rate)
